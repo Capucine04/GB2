@@ -1,0 +1,517 @@
+:root {
+  --bg: #000000;
+  --grid-line: #222222;
+  --card-radius: 22px;
+  --white: #ffffff;
+  --black: #111111;
+  --gray: #666666;
+  --pill-radius: 999px;
+
+  --podcast: #ffd84d;
+  --documentaire: #ff7aa2;
+  --film: #ff9b4d;
+  --video: #a855f7;
+  --exposition: #4ade80;
+  --livre: #38bdf8;
+  --article: #fb7185;
+  --interview: #eab308;
+  --musique: #22c55e;
+  --image: #8b5cf6;
+  --marque: #0ea5e9;
+  --personnalite: #f97316;
+  --adresse: #10b981;
+  --site: #6366f1;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--white);
+}
+
+/* Topbar */
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 40px;
+  background: var(--white);
+  color: var(--black);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.topbar-year {
+  border-radius: 999px;
+  padding: 4px 18px;
+  border: 2px solid #000;
+}
+
+/* Layout */
+
+.layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  min-height: calc(100vh - 60px);
+}
+
+/* Filtres */
+
+.filters-panel {
+  background: #f5f5f5;
+  color: #111827;
+  padding: 24px 20px;
+  border-radius: 0 0 30px 0;
+}
+
+.filters-panel h2 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  font-size: 22px;
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 12px 0 6px;
+}
+
+.filters-panel select,
+.filters-panel input[type="text"],
+.filters-panel input[type="number"] {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font: inherit;
+}
+
+.filter-block {
+  margin-top: 14px;
+}
+
+.months {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.month-btn {
+  padding: 6px 10px;
+  border-radius: 14px;
+  border: 1px solid #000;
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.month-btn.active {
+  background: #111111;
+  color: #ffffff;
+}
+
+.btn {
+  border-radius: 16px;
+  padding: 10px 14px;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.btn-dark {
+  background: #111111;
+  color: #ffffff;
+}
+
+.btn-light {
+  background: #ffffff;
+  color: #111111;
+  border: 1px solid #111111;
+}
+
+/* Board */
+
+.board-area {
+  position: relative;
+  padding: 24px;
+  background-image: linear-gradient(#111111 1px, transparent 1px),
+    linear-gradient(90deg, #111111 1px, transparent 1px);
+  background-size: 160px 160px;
+  background-position: 0 0;
+}
+
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.month-pill {
+  border-radius: var(--pill-radius);
+  padding: 10px 30px;
+  border: none;
+  font-weight: 700;
+  font-size: 24px;
+  background: #ffffff;
+  color: #111111;
+}
+
+.btn-add {
+  background: #111111;
+  color: #ffffff;
+  border-radius: 18px;
+}
+
+/* Cards grid */
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
+  gap: 24px;
+}
+
+/* Card */
+
+.card {
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  background: #111827;
+  color: #111827;
+  display: flex;
+  flex-direction: column;
+  min-height: 260px;
+}
+
+.card-header {
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 14px;
+  background: #4b5563;
+  color: #ffffff;
+}
+
+.card-image {
+  background: #e5e7eb;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: #9ca3af;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-body {
+  padding: 10px 14px 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  color: #111111;      /* texte noir par défaut */
+}
+
+
+.card-tags {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.tag-pill {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+/* DESCRIPTION : 200 caractères max + fond couleur catégorie */
+
+.card-desc {
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 6px 0;
+  /* plus de fond ni de pastille : on laisse la couleur de la carte */
+  background: transparent;
+  color: inherit;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;        /* 3 lignes max pour ne pas déborder */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Couleur de la description = couleur de la catégorie + texte noir */
+
+.card--Podcast .card-header,
+.card--Podcast .card-footer,
+.card--Podcast .card-body {
+  background: var(--podcast);
+  color: #111111;
+}
+
+.card--Documentaire .card-header,
+.card--Documentaire .card-footer,
+.card--Documentaire .card-body {
+  background: var(--documentaire);
+  color: #111111;
+}
+
+.card--Film .card-header,
+.card--Film .card-footer,
+.card--Film .card-body {
+  background: var(--film);
+  color: #111111;
+}
+
+.card--Vidéo .card-header,
+.card--Vidéo .card-footer,
+.card--Vidéo .card-body {
+  background: var(--video);
+  color: #111111;
+}
+
+.card--Exposition .card-header,
+.card--Exposition .card-footer,
+.card--Exposition .card-body {
+  background: var(--exposition);
+  color: #111111;
+}
+
+.card--Livre .card-header,
+.card--Livre .card-footer,
+.card--Livre .card-body {
+  background: var(--livre);
+  color: #111111;
+}
+
+.card--Article .card-header,
+.card--Article .card-footer,
+.card--Article .card-body {
+  background: var(--article);
+  color: #111111;
+}
+
+.card--Interview .card-header,
+.card--Interview .card-footer,
+.card--Interview .card-body {
+  background: var(--interview);
+  color: #111111;
+}
+
+.card--Musique .card-header,
+.card--Musique .card-footer,
+.card--Musique .card-body {
+  background: var(--musique);
+  color: #111111;
+}
+
+.card--Image .card-header,
+.card--Image .card-footer,
+.card--Image .card-body {
+  background: var(--image);
+  color: #111111;
+}
+
+.card--Marque .card-header,
+.card--Marque .card-footer,
+.card--Marque .card-body {
+  background: var(--marque);
+  color: #111111;
+}
+
+.card--Personnalité .card-header,
+.card--Personnalité .card-footer,
+.card--Personnalité .card-body {
+  background: var(--personnalite);
+  color: #111111;
+}
+
+.card--Adresse .card-header,
+.card--Adresse .card-footer,
+.card--Adresse .card-body {
+  background: var(--adresse);
+  color: #111111;
+}
+
+.card--Site\/application .card-header,
+.card--Site\/application .card-footer,
+.card--Site\/application .card-body {
+  background: var(--site);
+  color: #111111;
+}
+
+
+.card-link {
+  font-size: 11px;
+  color: #bfdbfe;
+  text-decoration: underline;
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+.card-footer {
+  padding: 6px 14px 8px;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.card-btn {
+  border-radius: 999px;
+  border: none;
+  padding: 4px 8px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+/* Modal */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-backdrop.open {
+  display: flex;
+}
+
+.modal {
+  background: #ffffff;
+  color: #111827;
+  padding: 22px 24px 18px;
+  border-radius: 22px;
+  width: min(780px, 100% - 32px);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.close-btn {
+  border-radius: 999px;
+  border: none;
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+  cursor: pointer;
+  background: #111827;
+  color: #ffffff;
+}
+
+.entry-form .field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+.modal {
+  background: #ffffff;
+  color: #111827;
+  padding: 22px 24px 18px;
+  border-radius: 22px;
+  width: min(640px, 100% - 32px); /* un peu plus compact */
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+
+.entry-form label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.entry-form input,
+.entry-form textarea,
+.entry-form select {
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  padding: 7px 9px;
+  font: inherit;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .filters-panel {
+    border-radius: 0 0 20px 20px;
+  }
+
+  .board-area {
+    padding: 16px;
+    background-size: 120px 120px;
+  }
+
+  .board-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .month-pill {
+    font-size: 20px;
+  }
+}
+.filters-panel .btn-add {
+  width: 100%;
+  margin-top: 8px;
+}
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 10px 0 6px;
+}
+
+.section-separator {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 18px 0;
+}

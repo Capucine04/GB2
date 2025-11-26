@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Grand Board</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-title">GRAND BOARD</div>
+    <div class="topbar-year" id="currentYear"></div>
+  </header>
+
+
+  <main class="layout">
+    <!-- Panneau filtres -->
+    <aside class="filters-panel">
+      <h2>Filtres</h2>
+
+      <label class="filter-label">Catégorie</label>
+<select id="filterCategory">
+  <option value="">Toutes les catégories</option>
+</select>
+
+      <label class="filter-label">Thème 1</label>
+      <select id="filterTheme1">
+        <option value="">Tous les thèmes 1</option>
+      </select>
+
+      <label class="filter-label">Thème 2</label>
+      <select id="filterTheme2">
+        <option value="">Tous les thèmes 2</option>
+      </select>
+
+      <div class="filter-block">
+        <div class="filter-label">Mois</div>
+        <div class="months" id="monthsContainer"></div>
+      </div>
+
+      <label class="filter-label">Année</label>
+<select id="filterYear">
+  <option value="">Toutes les années</option>
+</select>
+
+
+      <button id="applyFilters" class="btn btn-dark">Filtrer</button>
+      <button id="resetFilters" class="btn btn-light">Réinitialiser</button>
+      <button id="openManageModal" class="btn btn-add">AJOUT</button>
+    </aside>
+
+    <!-- Board -->
+    <section class="board-area">
+      <div class="board-header">
+        <button class="month-pill" id="selectedMonthLabel">TOUT</button>
+        <button class="btn btn-add" id="openAddForm">+ Ajouter une entrée</button>
+      </div>
+
+      <div id="cardsGrid" class="cards-grid"></div>
+    </section>
+  </main>
+
+  <!-- Modal ajout / édition -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Ajouter une entrée</h2>
+        <button class="close-btn" id="closeModal">×</button>
+      </div>
+
+      <form id="entryForm" class="entry-form">
+  <input type="hidden" id="entryId" />
+
+  <div class="field">
+    <label for="title">Titre de l'entrée</label>
+    <input id="title" type="text" required />
+  </div>
+
+  <div class="field">
+    <label for="category">Catégories</label>
+    <select id="category" required></select>
+  </div>
+
+  <div class="field">
+    <label for="theme1">Thème 1</label>
+    <input id="theme1" type="text" />
+  </div>
+
+  <div class="field">
+    <label for="theme2">Thème 2</label>
+    <input id="theme2" type="text" />
+  </div>
+
+  <div class="field">
+    <label for="description">Description (200 caractères max.)</label>
+    <textarea id="description" rows="3" maxlength="200"></textarea>
+  </div>
+
+  <div class="field">
+    <label for="link">Lien</label>
+    <input id="link" type="url" placeholder="https://..." />
+  </div>
+
+  <div class="field">
+    <label for="month">Mois</label>
+    <select id="month" required></select>
+  </div>
+
+  <div class="field">
+    <label for="year">Année</label>
+    <select id="year" required></select>
+  </div>
+
+  <div class="field">
+    <label for="imageUrl">Image (URL)</label>
+    <input id="imageUrl" type="url" placeholder="Colle une URL d'image (optionnel)" />
+  </div>
+
+  <div class="field">
+    <label for="imageFile">Image (fichier depuis l’ordinateur)</label>
+    <input id="imageFile" type="file" accept="image/*" />
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" id="cancelForm">Annuler</button>
+    <button type="submit" class="btn btn-dark">Sauvegarder</button>
+  </div>
+</form>
+    </div>
+  </div>
+<!-- Modal gestion années / catégories -->
+<div class="modal-backdrop" id="manageBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Gérer les années et catégories</h2>
+      <button class="close-btn" id="closeManageModal">×</button>
+    </div>
+
+    <div class="entry-form">
+      <h3 class="section-title">Années</h3>
+
+      <div class="field">
+        <label for="manageYearSelect">Année existante</label>
+        <select id="manageYearSelect"></select>
+      </div>
+
+      <div class="field">
+        <label for="manageYearInput">Nouvelle valeur</label>
+        <input id="manageYearInput" type="number" placeholder="Ex: 2026" />
+      </div>
+
+     <div class="modal-footer">
+  <button type="button" class="btn btn-light" id="addYearBtn">Ajouter</button>
+  <button type="button" class="btn btn-dark" id="editYearBtn">Renommer</button>
+  <button type="button" class="btn btn-light" id="deleteYearBtn">Supprimer</button>
+</div>
+
+      <hr class="section-separator" />
+
+      <h3 class="section-title">Catégories</h3>
+
+      <div class="field">
+        <label for="manageCategorySelect">Catégorie existante</label>
+        <select id="manageCategorySelect"></select>
+      </div>
+
+      <div class="field">
+        <label for="manageCategoryInput">Nouvelle valeur</label>
+        <input id="manageCategoryInput" type="text" placeholder="Ex: Magazine" />
+      </div>
+
+      <div class="modal-footer">
+  <button type="button" class="btn btn-light" id="addCategoryBtn">Ajouter</button>
+  <button type="button" class="btn btn-dark" id="editCategoryBtn">Renommer</button>
+  <button type="button" class="btn btn-light" id="deleteCategoryBtn">Supprimer</button>
+</div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" id="cancelManage">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <script src="app.js"></script>
+</body>
+</html>
