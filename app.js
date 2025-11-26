@@ -106,8 +106,26 @@ const manageCategoryInput = document.getElementById("manageCategoryInput");
 const addCategoryBtn = document.getElementById("addCategoryBtn");
 const editCategoryBtn = document.getElementById("editCategoryBtn");
 const deleteCategoryBtn = document.getElementById("deleteCategoryBtn");
+async function loadSharedData() {
+  try {
+    const res = await fetch("data/entries.json");
+    const data = await res.json();
 
-function init() {
+    if (Array.isArray(data)) {
+      entries = data;
+    } else if (data && Array.isArray(data.entries)) {
+      entries = data.entries;
+    } else {
+      entries = [];
+    }
+  } catch (e) {
+    console.error("Impossible de charger data/entries.json", e);
+    entries = [];
+  }
+}
+
+async function init() {
+  await loadSharedData();
   const now = new Date();
   yearTop.textContent = now.getFullYear();
 
