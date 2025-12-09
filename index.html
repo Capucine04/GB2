@@ -185,6 +185,21 @@
   </div>
 </div>
 
-  <script src="app.js"></script>
+    <script src="app.js"></script>
+
+  <!-- Netlify Identity widget pour gérer les invitations / connexions -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script>
+    if (window.netlifyIdentity) {
+      window.netlifyIdentity.on("init", (user) => {
+        // Si quelqu'un se connecte depuis le site, on le renvoie vers /admin
+        if (!user) {
+          window.netlifyIdentity.on("login", () => {
+            document.location.href = "/admin/";
+          });
+        }
+      });
+    }
+  </script>
 </body>
 </html>
