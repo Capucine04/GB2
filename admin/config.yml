@@ -6,17 +6,26 @@ media_folder: "uploads"
 public_folder: "/uploads"
 
 collections:
-  - name: "entries"
-    label: "Entrées"
-    file: "data/entries.json"
-    format: "json"
-    fields:
-      - { label: "Titre", name: "title", widget: "string" }
-      - { label: "Lien image", name: "image", widget: "string" }
-      - { label: "Catégorie", name: "category", widget: "string" }
-      - { label: "Thème 1", name: "theme1", widget: "string" }
-      - { label: "Thème 2", name: "theme2", widget: "string" }
-      - { label: "Description", name: "description", widget: "text" }
-      - { label: "Lien", name: "url", widget: "string", required: false }
-      - { label: "Mois", name: "month", widget: "number", min: 1, max: 12 }
-      - { label: "Année", name: "year", widget: "number" }
+  - name: "grandboard"
+    label: "Grand Board"
+    files:
+      - label: "Entrées"
+        name: "entries"
+        file: "data/entries.json"
+        format: "json"
+        fields:
+          - label: "Entrées"
+            name: "entries"
+            widget: "list"
+            fields:
+              - { label: "ID", name: "id", widget: "string" }
+              - { label: "Titre", name: "title", widget: "string" }
+              - { label: "Catégorie", name: "category", widget: "string" }
+              - { label: "Thème 1", name: "theme1", widget: "string", required: false }
+              - { label: "Thème 2", name: "theme2", widget: "string", required: false }
+              - { label: "Description", name: "description", widget: "text", required: false }
+              - { label: "Lien", name: "link", widget: "string", required: false }
+              - { label: "Mois", name: "month", widget: "number", min: 1, max: 12 }
+              - { label: "Année", name: "year", widget: "number" }
+              - { label: "Image (URL)", name: "imageUrl", widget: "string", required: false }
+              - { label: "Image encodée", name: "imageData", widget: "text", required: false }
