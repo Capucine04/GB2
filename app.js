@@ -546,14 +546,10 @@ function finalizeSave(base, existingIndex) {
     entries.push(base);
   }
 
+  // on garde aussi le localStorage si tu veux
   saveJSON(STORAGE_KEY, entries);
-  refreshThemesFilters();
-  refreshCategoriesList();
-  refreshManageLists();
-  render();
-  closeModal();
-}
-  // Envoi de l'entrée au backend (Netlify Function) pour mise à jour du fichier GitHub
+
+  // 🔁 Envoi de l'entrée au backend (Netlify Function) pour mise à jour de entries.json sur GitHub
   try {
     fetch("/.netlify/functions/save-entry", {
       method: "POST",
@@ -563,10 +559,18 @@ function finalizeSave(base, existingIndex) {
       if (!res.ok) {
         console.error("Erreur en sauvegardant sur GitHub");
       }
+      // on pourrait lire la réponse ici si besoin
     });
   } catch (e) {
     console.error("Erreur d'appel à la Netlify Function", e);
   }
+
+  refreshThemesFilters();
+  refreshCategoriesList();
+  refreshManageLists();
+  render();
+  closeModal();
+}
 
 
 // ===== Suppression entrée =====
