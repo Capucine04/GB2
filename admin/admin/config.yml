@@ -1,0 +1,22 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "uploads"
+public_folder: "/uploads"
+
+collections:
+  - name: "entries"
+    label: "Entrées"
+    file: "data/entries.json"
+    format: "json"
+    fields:
+      - { label: "Titre", name: "title", widget: "string" }
+      - { label: "Lien image", name: "image", widget: "string" }
+      - { label: "Catégorie", name: "category", widget: "string" }
+      - { label: "Thème 1", name: "theme1", widget: "string" }
+      - { label: "Thème 2", name: "theme2", widget: "string" }
+      - { label: "Description", name: "description", widget: "text" }
+      - { label: "Lien", name: "url", widget: "string", required: false }
+      - { label: "Mois", name: "month", widget: "number", min: 1, max: 12 }
+      - { label: "Année", name: "year", widget: "number" }
