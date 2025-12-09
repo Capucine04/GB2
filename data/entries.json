@@ -1,15 +1,17 @@
-[
-  {
-    "id": "exemple-1",
-    "title": "Exemple d'entrée",
-    "category": "Film",
-    "theme1": "Inspiration",
-    "theme2": "",
-    "description": "Ceci est une entrée d'exemple pour tester le board partagé.",
-    "link": "https://example.com",
-    "month": 11,
-    "year": 2025,
-    "imageUrl": "",
-    "imageData": ""
-  }
-]
+{
+  "entries": [
+    {
+      "id": "exemple-1",
+      "title": "Exemple d'entrée",
+      "category": "Film",
+      "theme1": "Inspiration",
+      "theme2": "",
+      "description": "Ceci est une entrée d'exemple pour tester le board partagé.",
+      "link": "https://example.com",
+      "month": 11,
+      "year": 2025,
+      "imageUrl": "",
+      "imageData": ""
+    }
+  ]
+}
