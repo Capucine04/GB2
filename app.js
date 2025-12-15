@@ -548,6 +548,20 @@ function finalizeSave(base, existingIndex) {
 
   // on garde aussi le localStorage si tu veux
   saveJSON(STORAGE_KEY, entries);
+  // 🔁 Envoi de l'entrée au backend (Netlify Function)
+  try {
+    fetch("/.netlify/functions/save-entry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entry: base }),
+    }).then((res) => {
+      if (!res.ok) {
+        console.error("Erreur en sauvegardant sur GitHub");
+      }
+    });
+  } catch (e) {
+    console.error("Erreur d'appel à la Netlify Function", e);
+  }
 
   // 🔁 Envoi de l'entrée au backend (Netlify Function) pour mise à jour de entries.json sur GitHub
   try {
