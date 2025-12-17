@@ -186,13 +186,18 @@
 </div>
 
    <!-- SCRIPTS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.sb = supabase.createClient(
-    "https://dxilpdygitggghwbatzl.supabase.co",
-    "eyJ...TA_VRAIE_CLE..."
-  );
-  console.log("Supabase client ready:", !!window.sb);
+  const SUPABASE_URL = "https://dxilpdygitggghwbatzl.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJ...TA_CLE_ANON_COMPLETE...";
+
+  window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Test immédiat
+  window.sb.from("Entries").select("id").limit(1).then(({ error }) => {
+    console.log(error ? "❌ Supabase KO" : "✅ Supabase OK");
+    if (error) console.log(error);
+  });
 </script>
 
 <script src="app.js"></script>
