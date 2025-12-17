@@ -121,24 +121,35 @@ const deleteCategoryBtn = document.getElementById("deleteCategoryBtn");
 
 async function loadSharedData() {
   try {
-    const res = await fetch("data/entries.json", { cache: "no-store" });
-    const data = await res.json();
+    const { data, error } = await window.sb
+      .from("Entries")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    if (Array.isArray(data)) {
-      entries = data;
-    } else if (data && Array.isArray(data.entries)) {
-      entries = data.entries;
-    } else {
-      entries = [];
-    }
+    if (error) throw error;
 
-    // On garde un cache local au cas où
+    entries = (data || []).map((row) => ({
+      id: String(row.id),
+      title: row.title || "",
+      category: row.category || "",
+      theme1: row.theme1 || "",
+      theme2: row.theme2 || "",
+      description: row.description || "",
+      link: row.link || "",
+      month: row.month || 1,
+      year: row.year || new Date().getFullYear(),
+      imageUrl: row.image_url || "",
+      imagePath: row.image_path || "",
+      imageData: ""
+    }));
+
     saveJSON(STORAGE_KEY, entries);
   } catch (e) {
-    console.error("Impossible de charger data/entries.json, fallback localStorage", e);
+    console.error("Impossible de charger Supabase, fallback localStorage", e);
     entries = loadJSON(STORAGE_KEY, []);
   }
 }
+
 
 async function init() {
   await loadSharedData();
