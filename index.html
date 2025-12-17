@@ -187,13 +187,14 @@
 
    <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const SUPABASE_URL = "https://dxilpdygitggghwbatzl.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJ...COLLE_ICI_TA_VRAIE_ANON_PUBLIC_KEY...";
+<script>
+  window.sb = supabase.createClient(
+    "https://dxilpdygitggghwbatzl.supabase.co",
+    "eyJ...TA_VRAIE_CLE..."
+  );
+  console.log("Supabase client ready:", !!window.sb);
+</script>
 
-    window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  </script>
-
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
