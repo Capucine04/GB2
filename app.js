@@ -106,9 +106,10 @@ const manageCategoryInput = document.getElementById("manageCategoryInput");
 const addCategoryBtn = document.getElementById("addCategoryBtn");
 const editCategoryBtn = document.getElementById("editCategoryBtn");
 const deleteCategoryBtn = document.getElementById("deleteCategoryBtn");
+
 async function loadSharedData() {
   try {
-    const res = await fetch("data/entries.json");
+    const res = await fetch("data/entries.json", { cache: "no-store" });
     const data = await res.json();
 
     if (Array.isArray(data)) {
@@ -118,14 +119,18 @@ async function loadSharedData() {
     } else {
       entries = [];
     }
+
+    // On garde un cache local au cas où
+    saveJSON(STORAGE_KEY, entries);
   } catch (e) {
-    console.error("Impossible de charger data/entries.json", e);
-    entries = [];
+    console.error("Impossible de charger data/entries.json, fallback localStorage", e);
+    entries = loadJSON(STORAGE_KEY, []);
   }
 }
 
 async function init() {
   await loadSharedData();
+
   const now = new Date();
   yearTop.textContent = now.getFullYear();
 
@@ -144,6 +149,7 @@ async function init() {
   saveJSON(YEARS_KEY, years);
 
   // remplir les mois dans le formulaire
+  fieldMonth.innerHTML = "";
   MONTHS.forEach((m, index) => {
     const opt = document.createElement("option");
     opt.value = index + 1;
@@ -152,6 +158,8 @@ async function init() {
   });
 
   // boutons mois filtres
+  monthsContainer.innerHTML = "";
+
   const allBtn = document.createElement("button");
   allBtn.type = "button";
   allBtn.textContent = "Voir tout";
@@ -228,6 +236,7 @@ async function init() {
   refreshCategoriesList();
   refreshManageLists();
   refreshThemesFilters();
+  updateMonthLabel();
   render();
 }
 
@@ -290,9 +299,7 @@ function refreshCategoriesList() {
     opt.textContent = cat;
     filterCategory.appendChild(opt);
   });
-  if (all.includes(currentFilter)) {
-    filterCategory.value = currentFilter;
-  }
+  if (all.includes(currentFilter)) filterCategory.value = currentFilter;
 
   fieldCategory.innerHTML = "";
   all.forEach((cat) => {
@@ -301,9 +308,7 @@ function refreshCategoriesList() {
     opt.textContent = cat;
     fieldCategory.appendChild(opt);
   });
-  if (all.includes(currentForm)) {
-    fieldCategory.value = currentForm;
-  }
+  if (all.includes(currentForm)) fieldCategory.value = currentForm;
 }
 
 // ===== Modal AJOUT (listes) =====
@@ -356,7 +361,7 @@ function render() {
 
   filtered.forEach((e) => {
     const card = document.createElement("article");
-    card.className = `card card--${e.category.replace(" ", "_")}`;
+    card.className = `card card--${(e.category || "Sans_categorie").replace(" ", "_")}`;
 
     const header = document.createElement("div");
     header.className = "card-header";
@@ -388,7 +393,7 @@ function render() {
 
     const catTag = document.createElement("span");
     catTag.className = "tag-pill";
-    catTag.textContent = e.category;
+    catTag.textContent = e.category || "";
     tags.appendChild(catTag);
 
     if (e.theme1) {
@@ -430,7 +435,7 @@ function render() {
 
     const dateSpan = document.createElement("span");
     const monthName = MONTHS[(e.month || 1) - 1] || "";
-    dateSpan.textContent = `${monthName} ${e.year}`;
+    dateSpan.textContent = `${monthName} ${e.year || ""}`;
     footer.appendChild(dateSpan);
 
     const actions = document.createElement("div");
@@ -540,50 +545,39 @@ function saveFromForm() {
 }
 
 function finalizeSave(base, existingIndex) {
-  if (existingIndex >= 0) {
-    entries[existingIndex] = base;
-  } else {
-    entries.push(base);
-  }
+  // 1) Update UI tout de suite
+  if (existingIndex >= 0) entries[existingIndex] = base;
+  else entries.push(base);
 
-  // on garde aussi le localStorage si tu veux
+  // 2) Cache local
   saveJSON(STORAGE_KEY, entries);
-  // 🔁 Envoi de l'entrée au backend (Netlify Function)
-  try {
-    fetch("/.netlify/functions/save-entry", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ entry: base }),
-    }).then((res) => {
-      if (!res.ok) {
-        console.error("Erreur en sauvegardant sur GitHub");
-      }
-    });
-  } catch (e) {
-    console.error("Erreur d'appel à la Netlify Function", e);
-  }
-
-  // 🔁 Envoi de l'entrée au backend (Netlify Function) pour mise à jour de entries.json sur GitHub
-  try {
-    fetch("/.netlify/functions/save-entry", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ entry: base }),
-    }).then((res) => {
-      if (!res.ok) {
-        console.error("Erreur en sauvegardant sur GitHub");
-      }
-      // on pourrait lire la réponse ici si besoin
-    });
-  } catch (e) {
-    console.error("Erreur d'appel à la Netlify Function", e);
-  }
 
   refreshThemesFilters();
   refreshCategoriesList();
   refreshManageLists();
   render();
   closeModal();
+
+  // 3) Persistance GitHub (Netlify Function)
+  fetch("/.netlify/functions/save-entry", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ entry: base }),
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Erreur en sauvegardant sur GitHub:", text);
+        return;
+      }
+      // Optionnel: recharger la source partagée pour être sûr d’être synchro
+      await loadSharedData();
+      refreshThemesFilters();
+      refreshCategoriesList();
+      refreshManageLists();
+      render();
+    })
+    .catch((e) => console.error("Erreur d'appel à la Netlify Function:", e));
 }
 
 // ===== Suppression entrée =====
@@ -591,7 +585,7 @@ function finalizeSave(base, existingIndex) {
 function deleteEntry(id) {
   if (!confirm("Supprimer cette entrée ?")) return;
 
-  // 1. Suppression locale (interface)
+  // 1) Supprimer dans l’UI tout de suite
   entries = entries.filter((e) => e.id !== id);
   saveJSON(STORAGE_KEY, entries);
 
@@ -600,7 +594,7 @@ function deleteEntry(id) {
   refreshManageLists();
   render();
 
-  // 2. Suppression persistante (GitHub via Netlify Function)
+  // 2) Supprimer sur GitHub (Netlify Function)
   fetch("/.netlify/functions/save-entry", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -608,11 +602,21 @@ function deleteEntry(id) {
       action: "delete",
       id: id,
     }),
-  }).then((res) => {
-    if (!res.ok) {
-      console.error("Erreur lors de la suppression sur GitHub");
-    }
-  });
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Erreur lors de la suppression sur GitHub:", text);
+        return;
+      }
+      // Optionnel: recharger pour être 100% synchro
+      await loadSharedData();
+      refreshThemesFilters();
+      refreshCategoriesList();
+      refreshManageLists();
+      render();
+    })
+    .catch((e) => console.error("Erreur d'appel à la Netlify Function:", e));
 }
 
 // ===== Thèmes filtres =====
@@ -706,8 +710,7 @@ function handleDeleteYear() {
   const used = entries.some((e) => e.year === val);
   if (used) {
     alert(
-      "Cette année est utilisée par au moins une entrée. " +
-        "Modifie ou supprime ces entrées avant de supprimer l'année."
+      "Cette année est utilisée par au moins une entrée. Modifie ou supprime ces entrées avant de supprimer l'année."
     );
     return;
   }
@@ -760,8 +763,7 @@ function handleDeleteCategory() {
   const used = entries.some((e) => e.category === cat);
   if (used) {
     alert(
-      "Cette catégorie est utilisée par au moins une entrée. " +
-        "Modifie ou supprime ces entrées avant de la supprimer."
+      "Cette catégorie est utilisée par au moins une entrée. Modifie ou supprime ces entrées avant de la supprimer."
     );
     return;
   }
