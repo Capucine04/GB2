@@ -586,26 +586,34 @@ function finalizeSave(base, existingIndex) {
   closeModal();
 }
 
-
 // ===== Suppression entrée =====
 
 function deleteEntry(id) {
   if (!confirm("Supprimer cette entrée ?")) return;
+
+  // 1. Suppression locale (interface)
   entries = entries.filter((e) => e.id !== id);
   saveJSON(STORAGE_KEY, entries);
+
   refreshThemesFilters();
   refreshCategoriesList();
   refreshManageLists();
   render();
+
+  // 2. Suppression persistante (GitHub via Netlify Function)
+  fetch("/.netlify/functions/save-entry", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "delete",
+      id: id,
+    }),
+  }).then((res) => {
+    if (!res.ok) {
+      console.error("Erreur lors de la suppression sur GitHub");
+    }
+  });
 }
-fetch("/.netlify/functions/save-entry", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    action: "delete",
-    id: id
-  }),
-});
 
 // ===== Thèmes filtres =====
 
