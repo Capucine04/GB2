@@ -185,21 +185,22 @@
   </div>
 </div>
 
-   <!-- SCRIPTS -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const SUPABASE_URL = "https://dxilpdygitggghwbatzl.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJ...TA_CLE_ANON_COMPLETE...";
+  const SUPABASE_ANON_KEY = "eyJ...COLLE ICI LA CLE COMPLETE...";
 
   window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // Test immédiat
-  window.sb.from("Entries").select("id").limit(1).then(({ error }) => {
-    console.log(error ? "❌ Supabase KO" : "✅ Supabase OK");
-    if (error) console.log(error);
-  });
+  window.sb
+    .from("Entries")
+    .select("id")
+    .limit(1)
+    .then(({ error }) => {
+      console.log(error ? "❌ Supabase KO" : "✅ Supabase OK");
+      if (error) console.error(error);
+    });
 </script>
 
 <script src="app.js"></script>
-</body>
-</html>
