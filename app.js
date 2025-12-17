@@ -1,5 +1,5 @@
 // =====================
-// CONFIG / CONSTANTES
+// CONSTANTES
 // =====================
 
 const MONTHS = [
@@ -8,11 +8,11 @@ const MONTHS = [
 ];
 
 const BASE_CATEGORIES = [
-  "Podcast","Documentaire","Film","Vidéo","Exposition","Livre",
-  "Article","Interview","Musique","Image","Marque","Personnalité",
-  "Adresse","Site/application"
+  "Podcast","Documentaire","Film","Vidéo","Exposition","Livre","Article",
+  "Interview","Musique","Image","Marque","Personnalité","Adresse","Site/application"
 ];
 
+// Cache local (optionnel, juste pour fallback)
 const STORAGE_KEY = "grandboard_entries_v2_cache";
 const YEARS_KEY = "grandboard_years_v2";
 const EXTRA_CATEGORIES_KEY = "grandboard_extra_categories_v2";
@@ -93,30 +93,33 @@ const editCategoryBtn = document.getElementById("editCategoryBtn");
 const deleteCategoryBtn = document.getElementById("deleteCategoryBtn");
 
 // =====================
-// SUPABASE HELPERS
+// SUPABASE (table + storage)
 // =====================
 
-// Upload image vers Supabase Storage, retourne { publicUrl, path }
+const TABLE_NAME = "Entries";
+const BUCKET_NAME = "images";
+
+// Upload image -> { publicUrl, path }
 async function uploadImageToSupabase(file, entryId) {
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-  const path = `entries/${entryId}.${ext}`;
+  const path = `entries/${entryId}-${Date.now()}.${ext}`;
 
   const { error: uploadError } = await window.sb
     .storage
-    .from("images")
-    .upload(path, file, { upsert: true });
+    .from(BUCKET_NAME)
+    .upload(path, file, { upsert: false });
 
   if (uploadError) throw uploadError;
 
-  const { data } = window.sb.storage.from("images").getPublicUrl(path);
+  const { data } = window.sb.storage.from(BUCKET_NAME).getPublicUrl(path);
   return { publicUrl: data.publicUrl, path };
 }
 
-// Charge tout depuis Supabase (source de vérité)
+// Charge depuis Supabase (source de vérité)
 async function loadSharedData() {
   try {
     const { data, error } = await window.sb
-      .from("Entries")
+      .from(TABLE_NAME)
       .select("*")
       .order("created_at", { ascending: false });
 
@@ -133,15 +136,47 @@ async function loadSharedData() {
       month: row.month || 1,
       year: row.year || new Date().getFullYear(),
       imageUrl: row.image_url || "",
-      imagePath: row.image_path || "",
-      imageData: "" // plus de base64
+      imagePath: row.image_path || ""
     }));
 
     saveJSON(STORAGE_KEY, entries);
   } catch (e) {
-    console.error("Impossible de charger Supabase, fallback localStorage", e);
+    console.error("Supabase load error, fallback localStorage:", e);
     entries = loadJSON(STORAGE_KEY, []);
   }
+}
+
+// Upsert (create/update) dans Supabase
+async function upsertEntryToSupabase(entry) {
+  const row = {
+    id: entry.id, // OBLIGATOIRE (id text PK)
+    title: entry.title,
+    category: entry.category,
+    theme1: entry.theme1,
+    theme2: entry.theme2,
+    description: entry.description,
+    link: entry.link,
+    month: entry.month,
+    year: entry.year,
+    image_url: entry.imageUrl || "",
+    image_path: entry.imagePath || ""
+  };
+
+  const { error } = await window.sb
+    .from(TABLE_NAME)
+    .upsert([row], { onConflict: "id" });
+
+  if (error) throw error;
+}
+
+// Delete dans Supabase
+async function deleteEntryFromSupabase(id) {
+  const { error } = await window.sb
+    .from(TABLE_NAME)
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
 }
 
 // =====================
@@ -154,7 +189,6 @@ async function init() {
   const now = new Date();
   yearTop.textContent = now.getFullYear();
 
-  // années: inclure année courante + années des entrées
   if (!years.includes(now.getFullYear())) years.push(now.getFullYear());
   entries.forEach((e) => {
     if (e.year && !years.includes(e.year)) years.push(e.year);
@@ -162,7 +196,7 @@ async function init() {
   years.sort((a, b) => a - b);
   saveJSON(YEARS_KEY, years);
 
-  // remplir les mois dans le formulaire
+  // mois dans le formulaire
   fieldMonth.innerHTML = "";
   MONTHS.forEach((m, index) => {
     const opt = document.createElement("option");
@@ -229,7 +263,7 @@ async function init() {
     saveFromForm();
   });
 
-  // gestion du modal AJOUT
+  // modal gestion catégories/années
   openManageModalBtn.addEventListener("click", openManageModal);
   closeManageModalBtn.addEventListener("click", closeManageModal);
   cancelManageBtn.addEventListener("click", closeManageModal);
@@ -259,8 +293,6 @@ function updateMonthLabel() {
   else selectedMonthLabel.textContent = MONTHS[Number(filters.month) - 1].toUpperCase();
 }
 
-// ===== Années =====
-
 function refreshYearsSelects() {
   filterYear.innerHTML = '<option value="">Toutes les années</option>';
   years.slice().sort((a, b) => a - b).forEach((y) => {
@@ -278,8 +310,6 @@ function refreshYearsSelects() {
     fieldYear.appendChild(opt);
   });
 }
-
-// ===== Catégories =====
 
 function getAllCategories() {
   const set = new Set(BASE_CATEGORIES);
@@ -311,8 +341,6 @@ function refreshCategoriesList() {
   });
   if (all.includes(currentForm)) fieldCategory.value = currentForm;
 }
-
-// ===== Modal AJOUT (listes) =====
 
 function refreshManageLists() {
   manageYearSelect.innerHTML = "";
@@ -472,6 +500,7 @@ function openModalForCreate() {
 function openModalForEdit(id) {
   const entry = entries.find((e) => e.id === id);
   if (!entry) return;
+
   modalTitle.textContent = "Modifier l'entrée";
   entryForm.reset();
   fieldId.value = entry.id;
@@ -493,11 +522,14 @@ function closeModal() {
 }
 
 // =====================
-// SAVE / DELETE (SUPABASE)
+// SAVE / DELETE
 // =====================
 
 function saveFromForm() {
-  const id = fieldId.value || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+  const id =
+    fieldId.value ||
+    (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+
   const existingIndex = entries.findIndex((e) => e.id === id);
 
   const chosenYear = Number(fieldYear.value);
@@ -533,38 +565,21 @@ function saveFromForm() {
         base.imagePath = uploaded.path;
       }
 
-      // UI immédiate
+      // UI instant
       if (existingIndex >= 0) entries[existingIndex] = base;
       else entries.push(base);
       saveJSON(STORAGE_KEY, entries);
+
       refreshThemesFilters();
       refreshCategoriesList();
       refreshManageLists();
       render();
       closeModal();
 
-      // Persistance Supabase
-      const row = {
-        id: base.id,
-        title: base.title,
-        category: base.category,
-        theme1: base.theme1,
-        theme2: base.theme2,
-        description: base.description,
-        link: base.link,
-        month: base.month,
-        year: base.year,
-        image_url: base.imageUrl || "",
-        image_path: base.imagePath || ""
-      };
+      // DB
+      await upsertEntryToSupabase(base);
 
-      const { error } = await window.sb
-        .from("Entries")
-        .upsert([row], { onConflict: "id" });
-
-      if (error) throw error;
-
-      // Re-sync depuis Supabase
+      // resync
       await loadSharedData();
       refreshThemesFilters();
       refreshCategoriesList();
@@ -585,7 +600,7 @@ function deleteEntry(id) {
       const removed = entries.find((e) => e.id === id);
       const imgPath = removed?.imagePath;
 
-      // UI immédiate
+      // UI instant
       entries = entries.filter((e) => e.id !== id);
       saveJSON(STORAGE_KEY, entries);
       refreshThemesFilters();
@@ -594,16 +609,11 @@ function deleteEntry(id) {
       render();
 
       // DB
-      const { error } = await window.sb
-        .from("Entries")
-        .delete()
-        .eq("id", id);
+      await deleteEntryFromSupabase(id);
 
-      if (error) throw error;
-
-      // optionnel: supprimer aussi l’image
+      // optionnel: supprimer aussi l'image
       if (imgPath) {
-        await window.sb.storage.from("images").remove([imgPath]);
+        await window.sb.storage.from(BUCKET_NAME).remove([imgPath]);
       }
 
       await loadSharedData();
