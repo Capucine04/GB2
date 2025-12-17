@@ -598,6 +598,14 @@ function deleteEntry(id) {
   refreshManageLists();
   render();
 }
+fetch("/.netlify/functions/save-entry", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    action: "delete",
+    id: id
+  }),
+});
 
 // ===== Thèmes filtres =====
 
