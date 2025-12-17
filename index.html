@@ -185,28 +185,15 @@
   </div>
 </div>
 
+   <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const SUPABASE_URL = "https://dxilpdygitggghwbatzl.supabase.co";
-  const SUPABASE_ANON_KEY = "COLLE_ICI_TA_ANON_PUBLIC_KEY";
-  window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
-
-    <script src="app.js"></script>
-
-  <!-- Netlify Identity widget pour gérer les invitations / connexions -->
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <script>
-    if (window.netlifyIdentity) {
-      window.netlifyIdentity.on("init", (user) => {
-        // Si quelqu'un se connecte depuis le site, on le renvoie vers /admin
-        if (!user) {
-          window.netlifyIdentity.on("login", () => {
-            document.location.href = "/admin/";
-          });
-        }
-      });
-    }
+    const SUPABASE_URL = "https://dxilpdygitggghwbatzl.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJ...COLLE_ICI_TA_VRAIE_ANON_PUBLIC_KEY...";
+
+    window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   </script>
+
+  <script src="app.js"></script>
 </body>
 </html>
