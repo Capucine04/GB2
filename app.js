@@ -1,76 +1,49 @@
-window.sb
-  .from("Entries")
-  .select("*")
-  .limit(1)
-  .then(({ data, error }) => {
-    if (error) {
-      console.error("Supabase ERROR:", error);
-    } else {
-      console.log("Supabase OK ✅", data);
-    }
-  });
+// =====================
+// CONFIG / CONSTANTES
+// =====================
 
 const MONTHS = [
-  "Janvier",
-  "Février",
-  "Mars",
-  "Avril",
-  "Mai",
-  "Juin",
-  "Juillet",
-  "Août",
-  "Septembre",
-  "Octobre",
-  "Novembre",
-  "Décembre"
+  "Janvier","Février","Mars","Avril","Mai","Juin",
+  "Juillet","Août","Septembre","Octobre","Novembre","Décembre"
 ];
 
 const BASE_CATEGORIES = [
-  "Podcast",
-  "Documentaire",
-  "Film",
-  "Vidéo",
-  "Exposition",
-  "Livre",
-  "Article",
-  "Interview",
-  "Musique",
-  "Image",
-  "Marque",
-  "Personnalité",
-  "Adresse",
-  "Site/application"
+  "Podcast","Documentaire","Film","Vidéo","Exposition","Livre",
+  "Article","Interview","Musique","Image","Marque","Personnalité",
+  "Adresse","Site/application"
 ];
 
-const STORAGE_KEY = "grandboard_entries_v1";
-const YEARS_KEY = "grandboard_years_v1";
-const EXTRA_CATEGORIES_KEY = "grandboard_extra_categories_v1";
+const STORAGE_KEY = "grandboard_entries_v2_cache";
+const YEARS_KEY = "grandboard_years_v2";
+const EXTRA_CATEGORIES_KEY = "grandboard_extra_categories_v2";
+
+// =====================
+// HELPERS localStorage
+// =====================
 
 function loadJSON(key, fallback) {
   const raw = localStorage.getItem(key);
   if (!raw) return fallback;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
+  try { return JSON.parse(raw); } catch { return fallback; }
 }
 
 function saveJSON(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+// =====================
+// STATE
+// =====================
+
 let entries = loadJSON(STORAGE_KEY, []);
 let years = loadJSON(YEARS_KEY, []);
 let extraCategories = loadJSON(EXTRA_CATEGORIES_KEY, []);
 
-let filters = {
-  category: "",
-  theme1: "",
-  theme2: "",
-  month: "",
-  year: ""
-};
+let filters = { category: "", theme1: "", theme2: "", month: "", year: "" };
+
+// =====================
+// DOM
+// =====================
 
 const yearTop = document.getElementById("currentYear");
 const cardsGrid = document.getElementById("cardsGrid");
@@ -119,6 +92,27 @@ const addCategoryBtn = document.getElementById("addCategoryBtn");
 const editCategoryBtn = document.getElementById("editCategoryBtn");
 const deleteCategoryBtn = document.getElementById("deleteCategoryBtn");
 
+// =====================
+// SUPABASE HELPERS
+// =====================
+
+// Upload image vers Supabase Storage, retourne { publicUrl, path }
+async function uploadImageToSupabase(file, entryId) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `entries/${entryId}.${ext}`;
+
+  const { error: uploadError } = await window.sb
+    .storage
+    .from("images")
+    .upload(path, file, { upsert: true });
+
+  if (uploadError) throw uploadError;
+
+  const { data } = window.sb.storage.from("images").getPublicUrl(path);
+  return { publicUrl: data.publicUrl, path };
+}
+
+// Charge tout depuis Supabase (source de vérité)
 async function loadSharedData() {
   try {
     const { data, error } = await window.sb
@@ -140,7 +134,7 @@ async function loadSharedData() {
       year: row.year || new Date().getFullYear(),
       imageUrl: row.image_url || "",
       imagePath: row.image_path || "",
-      imageData: ""
+      imageData: "" // plus de base64
     }));
 
     saveJSON(STORAGE_KEY, entries);
@@ -150,6 +144,9 @@ async function loadSharedData() {
   }
 }
 
+// =====================
+// INIT
+// =====================
 
 async function init() {
   await loadSharedData();
@@ -157,16 +154,10 @@ async function init() {
   const now = new Date();
   yearTop.textContent = now.getFullYear();
 
-  // s'assurer que l'année courante est dans la liste
-  if (!years.includes(now.getFullYear())) {
-    years.push(now.getFullYear());
-  }
-
-  // ajouter les années présentes dans les entrées
+  // années: inclure année courante + années des entrées
+  if (!years.includes(now.getFullYear())) years.push(now.getFullYear());
   entries.forEach((e) => {
-    if (e.year && !years.includes(e.year)) {
-      years.push(e.year);
-    }
+    if (e.year && !years.includes(e.year)) years.push(e.year);
   });
   years.sort((a, b) => a - b);
   saveJSON(YEARS_KEY, years);
@@ -201,9 +192,7 @@ async function init() {
 
   monthsContainer.addEventListener("click", (e) => {
     if (e.target.matches(".month-btn")) {
-      document
-        .querySelectorAll(".month-btn")
-        .forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".month-btn").forEach((b) => b.classList.remove("active"));
       e.target.classList.add("active");
       filters.month = e.target.dataset.value || "";
       updateMonthLabel();
@@ -225,9 +214,7 @@ async function init() {
     filterTheme1.value = "";
     filterTheme2.value = "";
     filterYear.value = "";
-    document
-      .querySelectorAll(".month-btn")
-      .forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".month-btn").forEach((b) => b.classList.remove("active"));
     document.querySelector(".month-btn[data-value='']").classList.add("active");
     updateMonthLabel();
     render();
@@ -263,39 +250,33 @@ async function init() {
   render();
 }
 
+// =====================
+// UI HELPERS
+// =====================
+
 function updateMonthLabel() {
-  if (!filters.month) {
-    selectedMonthLabel.textContent = "TOUT";
-  } else {
-    const index = Number(filters.month) - 1;
-    selectedMonthLabel.textContent = MONTHS[index].toUpperCase();
-  }
+  if (!filters.month) selectedMonthLabel.textContent = "TOUT";
+  else selectedMonthLabel.textContent = MONTHS[Number(filters.month) - 1].toUpperCase();
 }
 
 // ===== Années =====
 
 function refreshYearsSelects() {
   filterYear.innerHTML = '<option value="">Toutes les années</option>';
-  years
-    .slice()
-    .sort((a, b) => a - b)
-    .forEach((y) => {
-      const opt = document.createElement("option");
-      opt.value = y;
-      opt.textContent = y;
-      filterYear.appendChild(opt);
-    });
+  years.slice().sort((a, b) => a - b).forEach((y) => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    filterYear.appendChild(opt);
+  });
 
   fieldYear.innerHTML = "";
-  years
-    .slice()
-    .sort((a, b) => a - b)
-    .forEach((y) => {
-      const opt = document.createElement("option");
-      opt.value = y;
-      opt.textContent = y;
-      fieldYear.appendChild(opt);
-    });
+  years.slice().sort((a, b) => a - b).forEach((y) => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    fieldYear.appendChild(opt);
+  });
 }
 
 // ===== Catégories =====
@@ -303,15 +284,12 @@ function refreshYearsSelects() {
 function getAllCategories() {
   const set = new Set(BASE_CATEGORIES);
   extraCategories.forEach((c) => set.add(c));
-  entries.forEach((e) => {
-    if (e.category) set.add(e.category);
-  });
+  entries.forEach((e) => { if (e.category) set.add(e.category); });
   return [...set].sort((a, b) => a.localeCompare(b, "fr"));
 }
 
 function refreshCategoriesList() {
   const all = getAllCategories();
-
   const currentFilter = filterCategory.value;
   const currentForm = fieldCategory.value;
 
@@ -337,19 +315,14 @@ function refreshCategoriesList() {
 // ===== Modal AJOUT (listes) =====
 
 function refreshManageLists() {
-  // années
   manageYearSelect.innerHTML = "";
-  years
-    .slice()
-    .sort((a, b) => a - b)
-    .forEach((y) => {
-      const opt = document.createElement("option");
-      opt.value = y;
-      opt.textContent = y;
-      manageYearSelect.appendChild(opt);
-    });
+  years.slice().sort((a, b) => a - b).forEach((y) => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    manageYearSelect.appendChild(opt);
+  });
 
-  // catégories
   const all = getAllCategories();
   manageCategorySelect.innerHTML = "";
   all.forEach((cat) => {
@@ -360,7 +333,9 @@ function refreshManageLists() {
   });
 }
 
-// ===== Rendu des cartes =====
+// =====================
+// RENDER
+// =====================
 
 function render() {
   cardsGrid.innerHTML = "";
@@ -393,12 +368,7 @@ function render() {
 
     const image = document.createElement("div");
     image.className = "card-image";
-    if (e.imageData) {
-      const img = document.createElement("img");
-      img.src = e.imageData;
-      img.alt = e.title || "Image";
-      image.appendChild(img);
-    } else if (e.imageUrl) {
+    if (e.imageUrl) {
       const img = document.createElement("img");
       img.src = e.imageUrl;
       img.alt = e.title || "Image";
@@ -484,7 +454,9 @@ function render() {
   });
 }
 
-// ===== Modal entrée =====
+// =====================
+// MODAL
+// =====================
 
 function openModalForCreate() {
   const now = new Date();
@@ -520,15 +492,13 @@ function closeModal() {
   modalBackdrop.classList.remove("open");
 }
 
-// ===== Sauvegarde entrée =====
+// =====================
+// SAVE / DELETE (SUPABASE)
+// =====================
 
 function saveFromForm() {
-  const id =
-    fieldId.value ||
-    (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
-
+  const id = fieldId.value || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
   const existingIndex = entries.findIndex((e) => e.id === id);
-  const existing = existingIndex >= 0 ? entries[existingIndex] : null;
 
   const chosenYear = Number(fieldYear.value);
   if (!years.includes(chosenYear)) {
@@ -550,99 +520,107 @@ function saveFromForm() {
     month: Number(fieldMonth.value),
     year: chosenYear,
     imageUrl: fieldImageUrl.value.trim(),
-    imageData: existing ? existing.imageData : ""
+    imagePath: ""
   };
 
   const file = fieldImageFile.files[0];
 
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      base.imageData = reader.result;
-      finalizeSave(base, existingIndex);
-    };
-    reader.readAsDataURL(file);
-  } else {
-    finalizeSave(base, existingIndex);
-  }
-}
-
-function finalizeSave(base, existingIndex) {
-  // 1) Update UI tout de suite
-  if (existingIndex >= 0) entries[existingIndex] = base;
-  else entries.push(base);
-
-  // 2) Cache local
-  saveJSON(STORAGE_KEY, entries);
-
-  refreshThemesFilters();
-  refreshCategoriesList();
-  refreshManageLists();
-  render();
-  closeModal();
-
-  // 3) Persistance GitHub (Netlify Function)
-  fetch("/.netlify/functions/save-entry", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ entry: base }),
-  })
-    .then(async (res) => {
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Erreur en sauvegardant sur GitHub:", text);
-        return;
+  (async () => {
+    try {
+      if (file) {
+        const uploaded = await uploadImageToSupabase(file, id);
+        base.imageUrl = uploaded.publicUrl;
+        base.imagePath = uploaded.path;
       }
-      // Optionnel: recharger la source partagée pour être sûr d’être synchro
+
+      // UI immédiate
+      if (existingIndex >= 0) entries[existingIndex] = base;
+      else entries.push(base);
+      saveJSON(STORAGE_KEY, entries);
+      refreshThemesFilters();
+      refreshCategoriesList();
+      refreshManageLists();
+      render();
+      closeModal();
+
+      // Persistance Supabase
+      const row = {
+        id: base.id,
+        title: base.title,
+        category: base.category,
+        theme1: base.theme1,
+        theme2: base.theme2,
+        description: base.description,
+        link: base.link,
+        month: base.month,
+        year: base.year,
+        image_url: base.imageUrl || "",
+        image_path: base.imagePath || ""
+      };
+
+      const { error } = await window.sb
+        .from("Entries")
+        .upsert([row], { onConflict: "id" });
+
+      if (error) throw error;
+
+      // Re-sync depuis Supabase
       await loadSharedData();
       refreshThemesFilters();
       refreshCategoriesList();
       refreshManageLists();
       render();
-    })
-    .catch((e) => console.error("Erreur d'appel à la Netlify Function:", e));
+    } catch (e) {
+      console.error("Erreur sauvegarde:", e);
+      alert("Impossible de sauvegarder en ligne.");
+    }
+  })();
 }
-
-// ===== Suppression entrée =====
 
 function deleteEntry(id) {
   if (!confirm("Supprimer cette entrée ?")) return;
 
-  // 1) Supprimer dans l’UI tout de suite
-  entries = entries.filter((e) => e.id !== id);
-  saveJSON(STORAGE_KEY, entries);
+  (async () => {
+    try {
+      const removed = entries.find((e) => e.id === id);
+      const imgPath = removed?.imagePath;
 
-  refreshThemesFilters();
-  refreshCategoriesList();
-  refreshManageLists();
-  render();
+      // UI immédiate
+      entries = entries.filter((e) => e.id !== id);
+      saveJSON(STORAGE_KEY, entries);
+      refreshThemesFilters();
+      refreshCategoriesList();
+      refreshManageLists();
+      render();
 
-  // 2) Supprimer sur GitHub (Netlify Function)
-  fetch("/.netlify/functions/save-entry", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "delete",
-      id: id,
-    }),
-  })
-    .then(async (res) => {
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Erreur lors de la suppression sur GitHub:", text);
-        return;
+      // DB
+      const { error } = await window.sb
+        .from("Entries")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // optionnel: supprimer aussi l’image
+      if (imgPath) {
+        await window.sb.storage.from("images").remove([imgPath]);
       }
-      // Optionnel: recharger pour être 100% synchro
+
       await loadSharedData();
       refreshThemesFilters();
       refreshCategoriesList();
       refreshManageLists();
       render();
-    })
-    .catch((e) => console.error("Erreur d'appel à la Netlify Function:", e));
+    } catch (e) {
+      console.error("Erreur suppression:", e);
+      alert("Impossible de supprimer en ligne.");
+    }
+  })();
 }
 
-// ===== Thèmes filtres =====
+// =====================
+// THEMES FILTERS
+// =====================
 
 function refreshThemesFilters() {
   const themes1 = new Set();
@@ -659,29 +637,27 @@ function refreshThemesFilters() {
   filterTheme1.innerHTML = '<option value="">Tous les thèmes 1</option>';
   filterTheme2.innerHTML = '<option value="">Tous les thèmes 2</option>';
 
-  [...themes1]
-    .sort((a, b) => a.localeCompare(b, "fr"))
-    .forEach((t) => {
-      const opt = document.createElement("option");
-      opt.value = t;
-      opt.textContent = t;
-      filterTheme1.appendChild(opt);
-    });
+  [...themes1].sort((a, b) => a.localeCompare(b, "fr")).forEach((t) => {
+    const opt = document.createElement("option");
+    opt.value = t;
+    opt.textContent = t;
+    filterTheme1.appendChild(opt);
+  });
 
-  [...themes2]
-    .sort((a, b) => a.localeCompare(b, "fr"))
-    .forEach((t) => {
-      const opt = document.createElement("option");
-      opt.value = t;
-      opt.textContent = t;
-      filterTheme2.appendChild(opt);
-    });
+  [...themes2].sort((a, b) => a.localeCompare(b, "fr")).forEach((t) => {
+    const opt = document.createElement("option");
+    opt.value = t;
+    opt.textContent = t;
+    filterTheme2.appendChild(opt);
+  });
 
   filterTheme1.value = currentT1;
   filterTheme2.value = currentT2;
 }
 
-// ===== Modal AJOUT : ouvrir / fermer =====
+// =====================
+// MANAGE MODAL
+// =====================
 
 function openManageModal() {
   refreshManageLists();
@@ -692,7 +668,9 @@ function closeManageModal() {
   manageBackdrop.classList.remove("open");
 }
 
-// ===== Handlers AJOUT : années =====
+// =====================
+// YEARS HANDLERS
+// =====================
 
 function handleAddYear() {
   const val = Number(manageYearInput.value);
@@ -715,9 +693,7 @@ function handleEditYear() {
   years = years.map((y) => (y === oldVal ? newVal : y));
   saveJSON(YEARS_KEY, years);
 
-  entries.forEach((e) => {
-    if (e.year === oldVal) e.year = newVal;
-  });
+  entries.forEach((e) => { if (e.year === oldVal) e.year = newVal; });
   saveJSON(STORAGE_KEY, entries);
 
   refreshYearsSelects();
@@ -732,9 +708,7 @@ function handleDeleteYear() {
 
   const used = entries.some((e) => e.year === val);
   if (used) {
-    alert(
-      "Cette année est utilisée par au moins une entrée. Modifie ou supprime ces entrées avant de supprimer l'année."
-    );
+    alert("Cette année est utilisée par au moins une entrée. Modifie ou supprime ces entrées avant de supprimer l'année.");
     return;
   }
 
@@ -746,7 +720,9 @@ function handleDeleteYear() {
   refreshManageLists();
 }
 
-// ===== Handlers AJOUT : catégories =====
+// =====================
+// CATEGORIES HANDLERS
+// =====================
 
 function handleAddCategory() {
   const val = manageCategoryInput.value.trim();
@@ -768,9 +744,7 @@ function handleEditCategory() {
   extraCategories = extraCategories.map((c) => (c === oldCat ? newCat : c));
   saveJSON(EXTRA_CATEGORIES_KEY, extraCategories);
 
-  entries.forEach((e) => {
-    if (e.category === oldCat) e.category = newCat;
-  });
+  entries.forEach((e) => { if (e.category === oldCat) e.category = newCat; });
   saveJSON(STORAGE_KEY, entries);
 
   refreshCategoriesList();
@@ -785,9 +759,7 @@ function handleDeleteCategory() {
 
   const used = entries.some((e) => e.category === cat);
   if (used) {
-    alert(
-      "Cette catégorie est utilisée par au moins une entrée. Modifie ou supprime ces entrées avant de la supprimer."
-    );
+    alert("Cette catégorie est utilisée par au moins une entrée. Modifie ou supprime ces entrées avant de la supprimer.");
     return;
   }
 
@@ -799,5 +771,9 @@ function handleDeleteCategory() {
   refreshCategoriesList();
   refreshManageLists();
 }
+
+// =====================
+// START
+// =====================
 
 init();
