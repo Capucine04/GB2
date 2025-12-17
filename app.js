@@ -141,7 +141,7 @@ async function loadSharedData() {
 
     saveJSON(STORAGE_KEY, entries);
   } catch (e) {
-    console.error("Supabase load error, fallback localStorage:", e);
+    console.error("Supabase load error, fallback localStorage:", JSON.stringify(e, null, 2));
     entries = loadJSON(STORAGE_KEY, []);
   }
 }
