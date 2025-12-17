@@ -1,3 +1,15 @@
+window.sb
+  .from("Entries")
+  .select("*")
+  .limit(1)
+  .then(({ data, error }) => {
+    if (error) {
+      console.error("Supabase ERROR:", error);
+    } else {
+      console.log("Supabase OK ✅", data);
+    }
+  });
+
 const MONTHS = [
   "Janvier",
   "Février",
