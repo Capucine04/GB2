@@ -118,10 +118,9 @@ async function uploadImageToSupabase(file, entryId) {
 // Charge depuis Supabase (source de vérité)
 async function loadSharedData() {
   try {
-    const { data, error } = await window.sb
-      .from(TABLE_NAME)
-      .select("*")
-      .order("created_at", { ascending: false });
+   const { data, error } = await window.sb
+  .from("Entries")
+  .select("*");
 
     if (error) throw error;
 
